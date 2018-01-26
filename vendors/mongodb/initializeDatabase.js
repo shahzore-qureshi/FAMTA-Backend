@@ -2,9 +2,9 @@ const mongodb = require('mongodb').MongoClient
 const assert = require('assert')
 const url = 'mongodb://localhost:27017'
 const dbName = 'famta'
+const mtaHelper = require('../mta-gtfs/mtaHelper');
 
 var client = null
-
 mongodb.connect(url)
 .then(newClient => {
   console.log("successfully connected to db")
@@ -26,6 +26,17 @@ mongodb.connect(url)
 .then(subwayServices => {
   if(subwayServices.length > 0) {
     return client.db(dbName).collection('subway_services').drop()
+  } else {
+    return Promise.resolve()
+  }
+})
+.then(() => {
+  return client.db(dbName).listCollections({ name: 'subway_stations' })
+})
+.then(data => { return data.toArray() })
+.then(subwayStations => {
+  if(subwayStations.length > 0) {
+    return client.db(dbName).collection('subway_stations').drop()
   } else {
     return Promise.resolve()
   }
@@ -75,9 +86,9 @@ mongodb.connect(url)
     { name: "4", lineId: subwayLines.find((subwayLine) => subwayLine.name == "green")._id },
     { name: "5", lineId: subwayLines.find((subwayLine) => subwayLine.name == "green")._id },
     { name: "6", lineId: subwayLines.find((subwayLine) => subwayLine.name == "green")._id },
-    { name: "6e", lineId: subwayLines.find((subwayLine) => subwayLine.name == "green")._id },
+    { name: "6E", lineId: subwayLines.find((subwayLine) => subwayLine.name == "green")._id },
     { name: "7", lineId: subwayLines.find((subwayLine) => subwayLine.name == "raspberry")._id },
-    { name: "7e", lineId: subwayLines.find((subwayLine) => subwayLine.name == "raspberry")._id },
+    { name: "7E", lineId: subwayLines.find((subwayLine) => subwayLine.name == "raspberry")._id },
     { name: "S", lineId: subwayLines.find((subwayLine) => subwayLine.name == "gray")._id },
     { name: "SIR", lineId: subwayLines.find((subwayLine) => subwayLine.name == "dark blue")._id }
   ]
@@ -89,6 +100,17 @@ mongodb.connect(url)
 .then(data => { return data.toArray() })
 .then(subwayServices => {
   console.log(subwayServices)
+})
+.then(() => mtaHelper.getSubwayStations)
+.then((subwayStations) => {
+  return client.db(dbName).collection('subway_stations').insertMany(subwayStations)
+})
+.then(() => {
+  return client.db(dbName).collection('subway_stations').find({})
+})
+.then(data => { return data.toArray() })
+.then(subwayStations => {
+  console.log(subwayStations)
 })
 .then(() => {
   client.close() 
