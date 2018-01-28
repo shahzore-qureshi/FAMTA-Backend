@@ -5,14 +5,14 @@ const dbName = 'famta'
 const mtaHelper = require('../mta-gtfs/mtaHelper')
 const Promise = require("bluebird");
 
-var client = null
+let client = null
 mongodb.connect(url)
 .then(newClient => {
   console.log("successfully connected to db")
   client = newClient
   return client.db(dbName).listCollections({ name: 'subway_times' })
 })
-.then(data => { return data.toArray() })
+.then(data => data.toArray())
 .then(subwayTimes => {
   if(subwayTimes.length > 0) {
     return client.db(dbName).collection('subway_times').drop()
@@ -20,18 +20,14 @@ mongodb.connect(url)
     return Promise.resolve()
   }
 })
-.then(() => {
-  return client.db(dbName).collection('subway_stations').find({})
-})
-.then(data => { return data.toArray() })
+.then(() => client.db(dbName).collection('subway_stations').find({}))
+.then(data => data.toArray())
 .then(subwayStations => {
-  console.log(subwayStations)
   return Promise.map(subwayStations, (subwayStation) => {
     return mtaHelper.getSubwayTimesByStationId(subwayStation.stop_id)
   }, { concurrency: 1 })
 })
 .then(results => {
-  console.log(results)
   let times = []
   for(result of results) {
     if(result.serviceIds) {
@@ -66,7 +62,7 @@ mongodb.connect(url)
 .then(() => {
   return client.db(dbName).collection('subway_times').find({})
 })
-.then(data => { return data.toArray() })
+.then(data => data.toArray())
 .then(subwayTimes => {
   console.log(subwayTimes)
 })

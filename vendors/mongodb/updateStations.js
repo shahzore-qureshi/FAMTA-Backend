@@ -3,40 +3,41 @@ const assert = require('assert')
 const url = 'mongodb://localhost:27017'
 const dbName = 'famta'
 const mtaHelper = require('../mta-gtfs/mtaHelper');
+const Promise = require("bluebird");
 
-var client = null
+let client = null
 mongodb.connect(url)
 .then(newClient => {
   console.log("successfully connected to db")
   client = newClient
   return client.db(dbName).collection('subway_stations').find({})
 })
-.then(data => { return data.toArray() })
+.then(data => data.toArray())
 .then(subwayStations => {
-  console.log(subwayStations)
-  let promises = []
-  for(subwayStation of subwayStations) {
-    promises.push(mtaHelper.getSubwayServicesByStationId(subwayStation.stop_id))
-  }
-  return Promise.all(promises)
+  return Promise.map(subwayStations, (subwayStation) => {
+    return mtaHelper.getSubwayServicesByStationId(subwayStation.stop_id)
+  }, { concurrency: 1 })
 })
-.then(stations => {
-  console.log(stations)
-  let promises = []
-  for(station of stations) {
-    promises.push(
-      client.db(dbName).collection('subway_stations').findOneAndUpdate(
-        { stop_id: station.stationId },
-        { $set: { service_ids: station.serviceIds } }
+.then(subwayStations => {
+  return Promise.map(subwayStations, (subwayStation) => {
+    if(subwayStation != null) {
+      return client.db(dbName).collection('subway_stations').findOneAndUpdate(
+        { stop_id: subwayStation.stationId },
+        { $set: { service_ids: subwayStation.serviceIds } },
+        { returnOriginal: false }
       )
-    )
-  }
-  return Promise.all(promises)
+    } else { return Promise.resolve() }
+  }, { concurrency: 1 })
 })
-.then(() => {
-  return client.db(dbName).collection('subway_stations').find({})
+.then(subwayStations => {
+  let copyArray = []
+  subwayStations.forEach(subwayStation => copyArray.push(subwayStation.value))
+  return client.db(dbName).collection('subway_stations_temp').insertMany(copyArray)
 })
-.then(data => { return data.toArray() })
+.then(() => client.db(dbName).collection('subway_stations').drop())
+.then(() => client.db(dbName).collection('subway_stations_temp').rename('subway_stations'))
+.then(() => client.db(dbName).collection('subway_stations').find({}))
+.then(data => data.toArray())
 .then(subwayStations => {
   console.log(subwayStations)
 })
