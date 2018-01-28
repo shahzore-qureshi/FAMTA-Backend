@@ -103,6 +103,7 @@ mongodb.connect(url)
 })
 .then(() => mtaHelper.getSubwayStations)
 .then((subwayStations) => {
+  subwayStations = subwayStations.filter(subwayStation => !subwayStation.stop_id.endsWith("N") && !subwayStation.stop_id.endsWith("S"))
   return client.db(dbName).collection('subway_stations').insertMany(subwayStations)
 })
 .then(() => {
