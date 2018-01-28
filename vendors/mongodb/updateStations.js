@@ -31,7 +31,11 @@ mongodb.connect(url)
 })
 .then(subwayStations => {
   let copyArray = []
-  subwayStations.forEach(subwayStation => copyArray.push(subwayStation.value))
+  subwayStations.forEach(subwayStation => {
+    if(subwayStation.value.service_ids.length > 0) {
+      copyArray.push(subwayStation.value)
+    }
+  })
   return client.db(dbName).collection('subway_stations_temp').insertMany(copyArray)
 })
 .then(() => client.db(dbName).collection('subway_stations').drop())
