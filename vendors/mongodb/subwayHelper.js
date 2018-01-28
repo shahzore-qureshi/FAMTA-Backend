@@ -46,6 +46,13 @@ const getSubwayStationsByLatLon = (lat, lon) => {
   })
 }
 
+const getSubwayTimes =
+  mongodb.connect(url).then(client => {
+    return client.db(dbName).collection('subway_times').find({})
+  }).then(data => {
+    return data.toArray()
+  })
+
 const getSubwayTimesByStationServiceBound = (stationId, serviceId, boundId) =>
   mongodb.connect(url).then(client => {
     return client.db(dbName).collection('subway_times').find({
@@ -58,5 +65,5 @@ const getSubwayTimesByStationServiceBound = (stationId, serviceId, boundId) =>
 module.exports = {
   getSubwayLines, getSubwayServices,
   getSubwayStations, getSubwayStationsByLatLon,
-  getSubwayTimesByStationServiceBound
+  getSubwayTimes, getSubwayTimesByStationServiceBound
 }

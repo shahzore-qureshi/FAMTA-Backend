@@ -2,7 +2,8 @@ const mongodb = require('mongodb').MongoClient
 const assert = require('assert')
 const url = 'mongodb://localhost:27017'
 const dbName = 'famta'
-const mtaHelper = require('../mta-gtfs/mtaHelper');
+const mtaHelper = require('../mta-gtfs/mtaHelper')
+const Promise = require("bluebird");
 
 var client = null
 mongodb.connect(url)
@@ -25,11 +26,9 @@ mongodb.connect(url)
 .then(data => { return data.toArray() })
 .then(subwayStations => {
   console.log(subwayStations)
-  let promises = []
-  for(subwayStation of subwayStations) {
-    promises.push(mtaHelper.getSubwayTimesByStationId(subwayStation.stop_id))
-  }
-  return Promise.all(promises)
+  return Promise.map(subwayStations, (subwayStation) => {
+    return mtaHelper.getSubwayTimesByStationId(subwayStation.stop_id)
+  }, { concurrency: 1 })
 })
 .then(results => {
   console.log(results)
@@ -39,6 +38,8 @@ mongodb.connect(url)
       for(serviceId of result.serviceIds) {
         let northBoundTrains = result.N.filter(train => train.routeId == serviceId)
         for(train of northBoundTrains) {
+          if(train.arrivalTime == null) train.arrivalTime = 1516957620
+          train.arrivalTime *= 1000
           times.push({
             stationId: result.stationId,
             serviceId,
@@ -48,6 +49,8 @@ mongodb.connect(url)
         }
         let southBoundTrains = result.S.filter(train => train.routeId == serviceId)
         for(train of southBoundTrains) {
+          if(train.arrivalTime == null) train.arrivalTime = 1516957620
+          train.arrivalTime *= 1000
           times.push({
             stationId: result.stationId,
             serviceId,

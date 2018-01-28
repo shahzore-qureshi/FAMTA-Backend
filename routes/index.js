@@ -36,7 +36,14 @@ router.get('/api/subway/stations/:lat/:lon', function(req, res, next) {
   })
 })
 
-router.get('/api/subway/stations/:stationId/:serviceId/:boundId', function(req, res, next) {
+router.get('/api/subway/times', function(req, res, next) {
+  subwayHelper.getSubwayTimes.then(subwayTimes => {
+    res.setHeader('content-type', 'application/json')
+    res.status(200).send(JSON.stringify(subwayTimes))
+  })
+})
+
+router.get('/api/subway/times/:stationId/:serviceId/:boundId', function(req, res, next) {
   if(req.params == null
       || req.params.stationId == null
       || req.params.serviceId == null

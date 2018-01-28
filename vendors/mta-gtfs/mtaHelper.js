@@ -27,6 +27,7 @@ const getSubwayServicesByStationId = (stationId) => {
 const getSubwayTimesByStationId = (stationId) => {
   return mta.schedule(stationId, mtaMap.getFeedIdByStationId(stationId))
     .then(result => {
+      console.log(result)
       let serviceSet = new Set()
       result.schedule[stationId]["N"].forEach(train => serviceSet.add(train.routeId))
       result.schedule[stationId]["S"].forEach(train => serviceSet.add(train.routeId))
