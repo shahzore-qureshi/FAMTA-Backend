@@ -5,71 +5,60 @@ const dbName = 'famta'
 const mtaHelper = require('../mta-gtfs/mtaHelper')
 const Promise = require("bluebird");
 
-let client = null
-mongodb.connect(url)
-.then(newClient => {
-  console.log("successfully connected to db")
-  client = newClient
-  return client.db(dbName).listCollections({ name: 'subway_times' })
-})
-.then(data => data.toArray())
-.then(subwayTimes => {
-  if(subwayTimes.length > 0) {
-    return client.db(dbName).collection('subway_times').drop()
-  } else {
-    return Promise.resolve()
-  }
-})
-.then(() => client.db(dbName).collection('subway_stations').find({}))
-.then(data => data.toArray())
-.then(subwayStations => {
-  return Promise.map(subwayStations, (subwayStation) => {
-    return mtaHelper.getSubwayTimesByStationId(subwayStation.stop_id)
-  }, { concurrency: 1 })
-})
-.then(results => {
-  let times = []
-  for(result of results) {
-    if(result.serviceIds) {
-      for(serviceId of result.serviceIds) {
-        let northBoundTrains = result.N.filter(train => train.routeId == serviceId)
-        for(train of northBoundTrains) {
-          if(train.arrivalTime == null) train.arrivalTime = 1516957620
-          train.arrivalTime *= 1000
-          times.push({
-            stationId: result.stationId,
-            serviceId,
-            boundId: "N",
-            arrivalTime: train.arrivalTime
-          })
-        }
-        let southBoundTrains = result.S.filter(train => train.routeId == serviceId)
-        for(train of southBoundTrains) {
-          if(train.arrivalTime == null) train.arrivalTime = 1516957620
-          train.arrivalTime *= 1000
-          times.push({
-            stationId: result.stationId,
-            serviceId,
-            boundId: "S",
-            arrivalTime: train.arrivalTime
-          })
+(async () => {
+  try {
+    let client = await mongodb.connect(url)
+    console.log("successfully connected to db")
+
+    let timeData = await client.db(dbName).listCollections({ name: 'subway_times' })
+    let timeArray = await timeData.toArray()
+    if(timeArray.length > 0) {
+      await client.db(dbName).collection('subway_times').drop()
+    }
+     
+    let stationData = await client.db(dbName).collection('subway_stations').find({})
+    let stationArray = await stationData.toArray()
+    let stationToTimeMaps = await Promise.map(stationArray, subwayStation => {
+      return mtaHelper.getSubwayStationToSubwayTimeMap(subwayStation.id)
+    }, { concurrency: 1 })
+
+    let times = []
+    for(stationToTimeMap of stationToTimeMaps) {
+      if(stationToTimeMap.serviceIds) {
+        for(serviceId of stationToTimeMap.serviceIds) {
+          let northBoundTrains = stationToTimeMap.N.filter(train => train.routeId == serviceId)
+          for(train of northBoundTrains) {
+            if(train.arrivalTime == null) train.arrivalTime = 1516957620
+            train.arrivalTime *= 1000
+            times.push({
+              station_id: stationToTimeMap.stationId,
+              service_id: serviceId,
+              bound_id: "N",
+              arrival_time: train.arrivalTime
+            })
+          }
+          let southBoundTrains = stationToTimeMap.S.filter(train => train.routeId == serviceId)
+          for(train of southBoundTrains) {
+            if(train.arrivalTime == null) train.arrivalTime = 1516957620
+            train.arrivalTime *= 1000
+            times.push({
+              station_id: stationToTimeMap.stationId,
+              service_id: serviceId,
+              bound_id: "S",
+              arrival_time: train.arrivalTime
+            })
+          }
         }
       }
     }
+    await client.db(dbName).collection('subway_times').insertMany(times)
+
+    let testTimeData = await client.db(dbName).collection('subway_times').find({})
+    let testTimeArray = await testTimeData.toArray()
+    console.log(testTimeArray)
+
+    await client.close()
+  } catch(err) {
+    console.log(err)
   }
-  return client.db(dbName).collection('subway_times').insertMany(times)
-})
-.then(() => {
-  return client.db(dbName).collection('subway_times').find({})
-})
-.then(data => data.toArray())
-.then(subwayTimes => {
-  console.log(subwayTimes)
-})
-.then(() => {
-  client.close() 
-})
-.catch(err => {
-  console.log("error was thrown")
-  console.log(err)
-})
+})()

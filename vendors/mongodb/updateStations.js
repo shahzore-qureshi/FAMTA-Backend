@@ -13,15 +13,15 @@ const Promise = require("bluebird");
     let stationData = await client.db(dbName).collection('subway_stations').find({})
     let stationArray = await stationData.toArray()
 
-    let stationToServicesMap = await Promise.map(stationArray, subwayStation => {
+    let stationToServicesMaps = await Promise.map(stationArray, subwayStation => {
         return mtaHelper.getSubwayStationToSubwayServicesMap(subwayStation.id)
     }, { concurrency: 1 })
 
-    let updatedStations = await Promise.map(stationToServicesMap, stationWithServices => {
-        if(stationWithServices != null) {
+    let updatedStations = await Promise.map(stationToServicesMaps, stationToServicesMap => {
+        if(stationToServicesMap != null) {
           return client.db(dbName).collection('subway_stations').findOneAndUpdate(
-            { id: stationWithServices.stationId },
-            { $set: { service_ids: stationWithServices.serviceIds } },
+            { id: stationToServicesMap.stationId },
+            { $set: { service_ids: stationToServicesMap.serviceIds } },
             { returnOriginal: false }
           )
         } else { return Promise.resolve() }

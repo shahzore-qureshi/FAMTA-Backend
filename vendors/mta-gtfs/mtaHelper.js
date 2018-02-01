@@ -24,7 +24,7 @@ const getSubwayStationToSubwayServicesMap = (stationId) => {
     .catch(err => { return { stationId, serviceIds: [] } })
 }
 
-const getSubwayTimesByStationId = (stationId) => {
+const getSubwayStationToSubwayTimeMap = (stationId) => {
   return mta.schedule(stationId, mtaMap.getFeedIdByStationId(stationId))
     .then(result => {
       if(result.schedule) {
@@ -47,5 +47,5 @@ const getSubwayTimesByStationId = (stationId) => {
 module.exports = {
   getSubwayStations,
   getSubwayStationToSubwayServicesMap,
-  getSubwayTimesByStationId
+  getSubwayStationToSubwayTimeMap
 }
