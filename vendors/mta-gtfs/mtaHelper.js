@@ -8,24 +8,27 @@ const getSubwayStations = mta.stop().then(results => {
   return stationArray 
 })
 
-const getSubwayStationServicesTimeMap = (stationId) => {
-  return mta.schedule(stationId, mtaMap.getFeedIdByStationId(stationId))
+const getSubwayStationServicesTimeMap = (station_id) => {
+  return mta.schedule(station_id, mtaMap.getFeedIdByStationId(station_id))
     .then(result => {
       if(result.schedule) {
         let serviceSet = new Set()
-        result.schedule[stationId]["N"].forEach(train => serviceSet.add(train.routeId))
-        result.schedule[stationId]["S"].forEach(train => serviceSet.add(train.routeId))
+        result.schedule[station_id]["N"].forEach(train => serviceSet.add(train.routeId))
+        result.schedule[station_id]["S"].forEach(train => serviceSet.add(train.routeId))
         return {
-          stationId,
-          serviceIds: [...serviceSet].sort(),
-          N: result.schedule[stationId]["N"],
-          S: result.schedule[stationId]["S"]
+          station_id,
+          service_ids: [...serviceSet].sort(),
+          N: result.schedule[station_id]["N"],
+          S: result.schedule[station_id]["S"]
         }
       } else {
-        return { stationId, serviceIds: [], N: [], S: [] }
+        return { station_id, service_ids: [], N: [], S: [] }
       }
     })
-    .catch(err => { return [] })
+    .catch(err => {
+      console.log(err);
+      return { station_id, service_ids: [], N: [], S: [] } 
+    })
 }
 
 module.exports = {

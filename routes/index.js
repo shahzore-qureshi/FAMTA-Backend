@@ -2,8 +2,15 @@ const express = require('express'),
       router = express.Router(),
       subwayHelper = require('../vendors/mongodb/subwayHelper')
 
+router.get('/api/subway/services', function(req, res, next) {
+  subwayHelper.getSubwayServices.then(subwayServices => {
+    res.setHeader('content-type', 'application/json')
+    res.status(200).send(JSON.stringify(subwayServices))
+  })
+})
+
 router.get('/api/subway/stations', function(req, res, next) {
-  subwayHelper.getSubwayStations.then(subwayStations => {
+  subwayHelper.getSubwayStationsWithServices.then(subwayStations => {
     res.setHeader('content-type', 'application/json')
     res.status(200).send(JSON.stringify(subwayStations))
   })
@@ -19,13 +26,6 @@ router.get('/api/subway/stations/:lat/:lon', function(req, res, next) {
   subwayHelper.getSubwayStationsByLatLon(req.params.lat, req.params.lon).then(subwayStations => {
     res.setHeader('content-type', 'application/json')
     res.status(200).send(JSON.stringify(subwayStations))
-  })
-})
-
-router.get('/api/subway/services', function(req, res, next) {
-  subwayHelper.getSubwayServices.then(subwayServices => {
-    res.setHeader('content-type', 'application/json')
-    res.status(200).send(JSON.stringify(subwayServices))
   })
 })
 

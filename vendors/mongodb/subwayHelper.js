@@ -3,13 +3,6 @@ const assert = require('assert')
 const url = 'mongodb://localhost:27017'
 const dbName = 'famta'
 
-const getSubwayLines =
-  mongodb.connect(url).then(client => {
-    return client.db(dbName).collection('subway_lines').find({})
-  }).then(data => {
-    return data.toArray()
-  })
-
 const getSubwayServices =
   mongodb.connect(url).then(client => {
     return client.db(dbName).collection('subway_services').find({})
@@ -24,20 +17,28 @@ const getSubwayStations =
     return data.toArray()
   })
 
+const getSubwayStationsWithServices =
+  mongodb.connect(url).then(client => {
+    return client.db(dbName).collection('subway_stations').find({})
+  }).then(data => {
+    return data.toArray()
+  }).then(results => {
+    return results.filter(station => station.service_ids.length > 0)
+  })
+
 const getSubwayStationsByLatLon = (lat, lon) => {
   return mongodb.connect(url).then(client => {
     return client.db(dbName).collection('subway_stations').find({})
   }).then(data => {
     return data.toArray()
   }).then(results => {
-    let resultsArray = Object.values(results)
-    let filteredArray = resultsArray.filter(station =>
-      !station.stop_id.endsWith("N") && !station.stop_id.endsWith("S"))
+    let filteredArray = results.filter(station =>
+      !station.id.endsWith("N") && !station.id.endsWith("S"))
     let sortedArray = filteredArray.sort((a,b) => {
-      let distA = Math.sqrt(Math.pow(a.stop_lat - lat, 2)
-                    + Math.pow(a.stop_lon - lon, 2))
-      let distB = Math.sqrt(Math.pow(b.stop_lat - lat, 2)
-                    + Math.pow(b.stop_lon - lon, 2))
+      let distA = Math.sqrt(Math.pow(a.latitude - lat, 2)
+                    + Math.pow(a.longitude - lon, 2))
+      let distB = Math.sqrt(Math.pow(b.latitude - lat, 2)
+                    + Math.pow(b.longitude - lon, 2))
       if(distA < distB) return -1
       if(distA > distB) return 1
       return 0
@@ -56,14 +57,14 @@ const getSubwayTimes =
 const getSubwayTimesByStationServiceBound = (stationId, serviceId, boundId) =>
   mongodb.connect(url).then(client => {
     return client.db(dbName).collection('subway_times').find({
-      stationId, serviceId, boundId
+      station_id: stationId, service_id: serviceId, bound_id: boundId
     })
   }).then(data => {
     return data.toArray()
   })
 
 module.exports = {
-  getSubwayLines, getSubwayServices,
-  getSubwayStations, getSubwayStationsByLatLon,
+  getSubwayServices, getSubwayStations,
+  getSubwayStationsWithServices, getSubwayStationsByLatLon,
   getSubwayTimes, getSubwayTimesByStationServiceBound
 }

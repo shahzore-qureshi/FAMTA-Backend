@@ -23,60 +23,45 @@ const Promise = require("bluebird");
     }, { concurrency: 1 })
 
     //UPDATE STATIONS WITH SERVICES
-    let updatedStations = await Promise.map(stationMaps, stationMap => {
+    await Promise.map(stationMaps, stationMap => {
         if(stationMap != null) {
           return client.db(dbName).collection('subway_stations').findOneAndUpdate(
-            { id: stationMap.stationId },
-            { $set: { service_ids: stationMap.serviceIds } },
+            { id: stationMap.station_id },
+            { $set: { service_ids: stationMap.service_ids } },
             { returnOriginal: false }
           )
         } else { return Promise.resolve() }
     }, { concurrency: 1 })
 
-    let stationsWithAtLeastOneService = []
-    updatedStations.forEach(subwayStation => {
-      if(subwayStation.value.service_ids.length > 0) {
-        stationsWithAtLeastOneService.push(subwayStation.value)
-      }
-    })
-
-    await client.db(dbName).collection('subway_stations_temp').insertMany(stationsWithAtLeastOneService)
-    await client.db(dbName).collection('subway_stations').drop()
-    await client.db(dbName).collection('subway_stations_temp').rename('subway_stations')
-
-    let checkStationData = await client.db(dbName).collection('subway_stations').find({})
-    let checkStationArray = await checkStationData.toArray()
-    console.log(checkStationArray)
-
-
     //UPDATE TIMES
-
     let times = []
+
+    //Remove maps that have no services.
+    stationMaps = stationMaps.filter(stationMap => stationMap.service_ids.length > 0)
+
     for(stationMap of stationMaps) {
-      if(stationMap.serviceIds) {
-        for(serviceId of stationMap.serviceIds) {
-          let northBoundTrains = stationMap.N.filter(train => train.routeId == serviceId)
-          for(train of northBoundTrains) {
-            if(train.arrivalTime == null) train.arrivalTime = 1516957620
-            train.arrivalTime *= 1000
-            times.push({
-              station_id: stationMap.stationId,
-              service_id: serviceId,
-              bound_id: "N",
-              arrival_time: train.arrivalTime
-            })
-          }
-          let southBoundTrains = stationMap.S.filter(train => train.routeId == serviceId)
-          for(train of southBoundTrains) {
-            if(train.arrivalTime == null) train.arrivalTime = 1516957620
-            train.arrivalTime *= 1000
-            times.push({
-              station_id: stationMap.stationId,
-              service_id: serviceId,
-              bound_id: "S",
-              arrival_time: train.arrivalTime
-            })
-          }
+      for(service_id of stationMap.service_ids) {
+        let northBoundTrains = stationMap.N.filter(train => train.routeId == service_id)
+        for(train of northBoundTrains) {
+          if(train.arrivalTime == null) train.arrivalTime = 1516957620
+          train.arrivalTime *= 1000
+          times.push({
+            station_id: stationMap.station_id,
+            service_id, 
+            bound_id: "N",
+            arrival_time: train.arrivalTime
+          })
+        }
+        let southBoundTrains = stationMap.S.filter(train => train.routeId == service_id)
+        for(train of southBoundTrains) {
+          if(train.arrivalTime == null) train.arrivalTime = 1516957620
+          train.arrivalTime *= 1000
+          times.push({
+            station_id: stationMap.station_id,
+            service_id,
+            bound_id: "S",
+            arrival_time: train.arrivalTime
+          })
         }
       }
     }
