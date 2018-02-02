@@ -1,3 +1,5 @@
+const getFeedIds = [1, 26, 16, 21, 2, 11, 31, 36, 51]
+
 const getFeedIdByStationId = (stationId) => {
   if(stationId == null) return 1
 
@@ -43,4 +45,4 @@ const getFeedIdByStationId = (stationId) => {
   return feedId
 }
 
-module.exports = { getFeedIdByStationId }
+module.exports = { getFeedIds, getFeedIdByStationId }
