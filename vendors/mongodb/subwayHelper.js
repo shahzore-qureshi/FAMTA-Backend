@@ -8,14 +8,24 @@ const getSubwayServices =
     return client.db(dbName).collection('subway_services').find({})
   }).then(data => {
     return data.toArray()
-  })
+  }).then(array => array.map(service => {
+    return { id: service.id, name: service.name }
+  }))
 
 const getSubwayStations =
   mongodb.connect(url).then(client => {
     return client.db(dbName).collection('subway_stations').find({})
   }).then(data => {
     return data.toArray()
-  })
+  }).then(array => array.map(station => {
+    return {
+      id: station.id,
+      name: station.name,
+      latitude: station.latitude,
+      longitude: station.longitude,
+      service_ids: station.service_ids 
+    }
+  }))
 
 const getSubwayStationsWithServices =
   mongodb.connect(url).then(client => {
@@ -23,7 +33,18 @@ const getSubwayStationsWithServices =
   }).then(data => {
     return data.toArray()
   }).then(results => {
-    return results.filter(station => station.service_ids.length > 0)
+    return results.reduce((filteredArray, station) => {
+              if(station.service_ids.length > 0) {
+                filteredArray.push({
+                  id: station.id,
+                  name: station.name,
+                  latitude: station.latitude,
+                  longitude: station.longitude,
+                  service_ids: station.service_ids 
+                })
+              }
+              return filteredArray
+            }, [])
   })
 
 const getSubwayStationsByLatLon = (lat, lon) => {
@@ -32,8 +53,18 @@ const getSubwayStationsByLatLon = (lat, lon) => {
   }).then(data => {
     return data.toArray()
   }).then(results => {
-    let filteredArray = results.filter(station =>
-      !station.id.endsWith("N") && !station.id.endsWith("S"))
+    let filteredArray = results.reduce((filteredArray, station) => {
+              if(!station.id.endsWith("N") && !station.id.endsWith("S")) {
+                filteredArray.push({
+                  id: station.id,
+                  name: station.name,
+                  latitude: station.latitude,
+                  longitude: station.longitude,
+                  service_ids: station.service_ids 
+                })
+              }
+              return filteredArray
+    }, [])
     let sortedArray = filteredArray.sort((a,b) => {
       let distA = Math.sqrt(Math.pow(a.latitude - lat, 2)
                     + Math.pow(a.longitude - lon, 2))
@@ -52,7 +83,14 @@ const getSubwayTimes =
     return client.db(dbName).collection('subway_times').find({})
   }).then(data => {
     return data.toArray()
-  })
+  }).then(array => array.map(time => {
+    return {
+      station_id: time.station_id,
+      service_id: time.service_id,
+      bound_id: time.bound_id,
+      arrival_time: time.arrival_time
+    }
+  }))
 
 const getSubwayTimesByStationServiceBound = (stationId, serviceId, boundId) =>
   mongodb.connect(url).then(client => {
@@ -61,7 +99,14 @@ const getSubwayTimesByStationServiceBound = (stationId, serviceId, boundId) =>
     })
   }).then(data => {
     return data.toArray()
-  })
+  }).then(array => array.map(time => {
+    return {
+      station_id: time.station_id,
+      service_id: time.service_id,
+      bound_id: time.bound_id,
+      arrival_time: time.arrival_time
+    }
+  }))
 
 module.exports = {
   getSubwayServices, getSubwayStations,
