@@ -9,6 +9,13 @@ router.get('/api/subway/services', function(req, res, next) {
   })
 })
 
+router.get('/api/subway/bounds', function(req, res, next) {
+  subwayHelper.getSubwayBounds.then(subwayBounds => {
+    res.setHeader('content-type', 'application/json')
+    res.status(200).send(JSON.stringify(subwayBounds))
+  })
+})
+
 router.get('/api/subway/stations', function(req, res, next) {
   subwayHelper.getSubwayStationsWithServices.then(subwayStations => {
     res.setHeader('content-type', 'application/json')

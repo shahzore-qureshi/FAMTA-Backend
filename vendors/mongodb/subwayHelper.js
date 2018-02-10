@@ -9,7 +9,25 @@ const getSubwayServices =
   }).then(data => {
     return data.toArray()
   }).then(array => array.map(service => {
-    return { id: service.id, name: service.name }
+    return {
+      id: service.id,
+      name: service.name,
+      northbound_id: service.northbound_id,
+      southbound_id: service.southbound_id
+    }
+  }))
+
+const getSubwayBounds =
+  mongodb.connect(url).then(client => {
+    return client.db(dbName).collection('subway_bounds').find({})
+  }).then(data => {
+    return data.toArray()
+  }).then(array => array.map(bound => {
+    return {
+      id: bound._id,
+      name: bound.name,
+      direction: bound.direction
+    }
   }))
 
 const getSubwayStations =
@@ -109,7 +127,7 @@ const getSubwayTimesByStationServiceBound = (stationId, serviceId, boundId) =>
   }))
 
 module.exports = {
-  getSubwayServices, getSubwayStations,
+  getSubwayServices, getSubwayBounds, getSubwayStations,
   getSubwayStationsWithServices, getSubwayStationsByLatLon,
   getSubwayTimes, getSubwayTimesByStationServiceBound
 }
