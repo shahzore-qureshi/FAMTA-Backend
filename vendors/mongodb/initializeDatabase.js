@@ -75,11 +75,12 @@ const mtaHelper = require('../mta-gtfs/mtaHelper');
     let serviceCounter = 0
     for(boundCounter = 0; boundCounter < insertedBounds.ops.length; boundCounter++) {
       let bound = insertedBounds.ops[boundCounter]
+      if(subwayServices[serviceCounter]["bound_ids"] == null) {
+        subwayServices[serviceCounter]["bound_ids"] = []
+      }
+      subwayServices[serviceCounter]["bound_ids"].push(bound._id)
       if(boundCounter % 2 != 0) {
-        subwayServices[serviceCounter]["southbound_id"] = bound._id
         serviceCounter++
-      } else {
-        subwayServices[serviceCounter]["northbound_id"] = bound._id
       }
     }
 

@@ -12,8 +12,7 @@ const getSubwayServices =
     return {
       id: service.id,
       name: service.name,
-      northbound_id: service.northbound_id,
-      southbound_id: service.southbound_id
+      bound_ids: service.bound_ids
     }
   }))
 
@@ -105,7 +104,7 @@ const getSubwayTimes =
     return {
       station_id: time.station_id,
       service_id: time.service_id,
-      bound_id: time.bound_id,
+      bound_direction: time.bound_direction,
       arrival_time: time.arrival_time
     }
   }))
@@ -121,7 +120,7 @@ const getSubwayTimesByStationServiceBound = (stationId, serviceId, boundId) =>
     return {
       station_id: time.station_id,
       service_id: time.service_id,
-      bound_id: time.bound_id,
+      bound_direction: time.bound_direction,
       arrival_time: time.arrival_time
     }
   }))

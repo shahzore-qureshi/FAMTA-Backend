@@ -48,7 +48,7 @@ const Promise = require("bluebird");
           times.push({
             station_id: stationMap.station_id,
             service_id, 
-            bound_id: "N",
+            bound_direction: "N",
             arrival_time: train.arrivalTime
           })
         }
@@ -59,7 +59,7 @@ const Promise = require("bluebird");
           times.push({
             station_id: stationMap.station_id,
             service_id,
-            bound_id: "S",
+            bound_direction: "S",
             arrival_time: train.arrivalTime
           })
         }
