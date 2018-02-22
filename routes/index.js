@@ -63,4 +63,11 @@ router.get('/api/subway/times/:stationId/:serviceId/:boundId', function(req, res
   })
 })
 
+router.get('/api/subway/lines', function(req, res, next) {
+  subwayHelper.getSubwayLines.then(subwayLines => {
+    res.setHeader('content-type', 'application/json')
+    res.json(subwayLines)
+  })
+})
+
 module.exports = router;

@@ -27,6 +27,12 @@ const mtaHelper = require('../mta-gtfs/mtaHelper');
       await client.db(dbName).collection('subway_stations').drop()
     }
 
+    let linesData = await client.db(dbName).listCollections({ name: 'subway_lines' })
+    let linesArray = await linesData.toArray()
+    if(linesArray.length > 0) {
+      await client.db(dbName).collection('subway_lines').drop()
+    }
+
     let subwayBounds = [
       { name: "Manhattan: Inwood - 207 Street", direction: "N" }, { name: "Brooklyn: Grant Ave, Queens: Rockaway Boulevard", direction: "S" },
       { name: "Manhattan: Washington Heights - 168 St", direction: "N" }, { name: "Brooklyn: Euclid Avenue", direction: "S" },

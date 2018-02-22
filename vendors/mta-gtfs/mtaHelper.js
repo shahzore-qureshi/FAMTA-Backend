@@ -4,11 +4,13 @@ const mtaGTFS = require('mta-gtfs'),
       Promise = require('bluebird'),
       htmlparser = require("htmlparser2")
 
-const getSubwayStations = mta.stop().then(results => {
+async function getSubwayStations() {
+  let results = await mta.stop()
   let stationArray = Object.values(results)
   for(station of stationArray) station.service_ids = []
+  console.log(stationArray)
   return stationArray 
-})
+}
 
 async function getSubwayStationServicesTimeMap(station_id) {
   let newMap = { station_id, service_ids: new Set(), N: [], S: [] }
@@ -45,21 +47,22 @@ async function getMapForOneStation(station_id, feed_id) {
   }
 }
 
-const getSubwayLines = mta.status('subway').then(lines => {
+async function getSubwayLines() {
+  let lines = await mta.status('subway')
   console.log(lines)
   let parsedLines = []
   lines.forEach(line => {
-    let parsedLine = { status: line.status }
+    let parsedLine = { id: line.name, name: line.name, status: line.status }
     if(line.status == "GOOD SERVICE") {
       parsedLine.events = []
     } else {
       parsedLine.events = getEventsFromStatus(line.text)
     }
-    parsedLine.name = line.name
     parsedLines.push(parsedLine)
   })
   console.log(JSON.stringify(parsedLines))
-})
+  return parsedLines
+}
 
 const getEventsFromStatus = status => {
   let events = []
