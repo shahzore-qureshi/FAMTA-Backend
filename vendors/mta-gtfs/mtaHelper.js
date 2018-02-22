@@ -1,7 +1,8 @@
-const mtaGTFS = require('mta-gtfs')
-const mta = new mtaGTFS({ key: '3f2afc8d6b42c4ea0ba912d9abe5a28a' })
-const mtaMap = require('./mtaMap')
-const Promise = require('bluebird')
+const mtaGTFS = require('mta-gtfs'),
+      mta = new mtaGTFS({ key: '3f2afc8d6b42c4ea0ba912d9abe5a28a' }),
+      mtaMap = require('./mtaMap'),
+      Promise = require('bluebird'),
+      htmlparser = require("htmlparser2")
 
 const getSubwayStations = mta.stop().then(results => {
   let stationArray = Object.values(results)
@@ -44,7 +45,88 @@ async function getMapForOneStation(station_id, feed_id) {
   }
 }
 
+const getSubwayLines = mta.status('subway').then(lines => {
+  console.log(lines)
+  let parsedLines = []
+  lines.forEach(line => {
+    let parsedLine = { status: line.status }
+    if(line.status == "GOOD SERVICE") {
+      parsedLine.events = []
+    } else {
+      parsedLine.events = getEventsFromStatus(line.text)
+    }
+    parsedLine.name = line.name
+    parsedLines.push(parsedLine)
+  })
+  console.log(JSON.stringify(parsedLines))
+})
+
+const getEventsFromStatus = status => {
+  let events = []
+  let eventCounter = -1
+
+  //Remove any HTML that styles the text.
+  status = status.replace(/<STRONG>/g, "")
+                 .replace(/<\/STRONG>/g, "")
+                 .replace(/<b>/g, "")
+                 .replace(/<\/b>/g, "")
+                 .replace(/<i>/g, "")
+                 .replace(/<\/i>/g, "")
+                 .replace("&bull;", "")
+  console.log("PARSED STATUS (no extra characters)")
+  console.log(status)
+  let htmlParser = new htmlparser.Parser({
+    onopentag: function(name, attribs) {
+      if(name === "span" && (
+           attribs.class === "TitlePlannedWork" ||
+           attribs.class === "TitleServiceChange" ||
+           attribs.class === "TitleDelay"
+      )) {
+        eventCounter++
+        events[eventCounter] = { title: "", body: "" }
+        switch(attribs.class) {
+          case "TitlePlannedWork":
+            events[eventCounter].title = "Planned Work"
+            break
+          case "TitleServiceChange":
+            events[eventCounter].title = "Service Change"
+            break
+          case "TitleDelay":
+            events[eventCounter].title = "Delays"
+            break
+        }
+      }
+    },
+    ontext: function(text) {
+      text = text.trim()
+      if(text != '' && text.length > 30 && !text.includes("following guide")) {
+        !text.endsWith('.') ? text += "." : text
+
+        //If text is lowercase, that means it is a continuation
+        //of the previous sentence. Let's remove the last period.
+        let firstLetter = text.charAt(0)
+        if(firstLetter === firstLetter.toLowerCase()
+          && firstLetter !== firstLetter.toUpperCase()) {
+            //Remove period and space.
+            events[eventCounter].body = events[eventCounter].body.substring(0, events[eventCounter].body.length - 2)
+            events[eventCounter].body += " "
+        }
+
+        events[eventCounter].body += text + " "
+      }
+    }
+  }, {decodeEntities: true})
+
+  htmlParser.write(status)
+  htmlParser.end()
+
+  //Remove extra spaces.
+  events.forEach(event => { event.title = event.title.trim(); event.body = event.body.trim(); })
+  return events 
+}
+
 module.exports = {
   getSubwayStations,
-  getSubwayStationServicesTimeMap
+  getSubwayStationServicesTimeMap,
+  getSubwayLines
 }
